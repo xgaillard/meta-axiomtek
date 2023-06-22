@@ -1,0 +1,80 @@
+From 654fb057253471b3d3087857476efa0440e30ed1 Mon Sep 17 00:00:00 2001
+From: "ktim.chen" <ktim.chen@axiomtek.com.tw>
+Date: Sat, 30 Jul 2022 09:56:13 +0800
+Subject: [PATCH 05/13] feat: add command to boot from sd card
+
+---
+ include/configs/q7m120.h | 27 +++++++++++++++++++++++++++
+ 1 file changed, 27 insertions(+)
+
+diff --git a/include/configs/q7m120.h b/include/configs/q7m120.h
+index acf00bf9a5..e7db829d7c 100755
+--- a/include/configs/q7m120.h
++++ b/include/configs/q7m120.h
+@@ -186,6 +186,7 @@
+ 	"mmcpart=1\0" \
+ 	"finduuid=part uuid mmc ${mmcdev}:2 uuid\0" \
+ 	"mmcroot=" CONFIG_MMCROOT " rootwait rw\0" \
++	"mmcroot_sd=" CONFIG_MMCROOT " rootwait rw\0" \
+ 	"mmcautodetect=yes\0" \
+ 	"update_sd_firmware=" \
+ 		"if test ${ip_dyn} = yes; then " \
+@@ -204,6 +205,8 @@
+ 	"smp=" SYS_NOSMP "\0"\
+ 	"mmcargs=setenv bootargs console=${console},${baudrate} ${smp} " \
+ 		"root=${mmcroot}\0" \
++	"mmcargs_sd=setenv bootargs console=${console},${baudrate} ${smp} " \
++		"root=${mmcroot_sd}\0" \
+ 	"loadbootscript=" \
+ 		"load mmc ${mmcdev}:${mmcpart} ${loadaddr} ${script} || " \
+ 		"load mmc ${mmcdev}:${mmcpart} ${loadaddr} boot/${script};\0" \
+@@ -211,8 +214,12 @@
+ 		"source\0" \
+ 	"loadimage=load mmc ${mmcdev}:${mmcpart} ${loadaddr} ${image} || " \
+ 		"load mmc ${mmcdev}:${mmcpart} ${loadaddr} boot/${image}\0" \
++	"loadimage_sd=load mmc ${sd_dev}:${mmcpart} ${loadaddr} ${image} || " \
++		"load mmc ${sd_dev}:${mmcpart} ${loadaddr} boot/${image}\0" \
+ 	"loadfdt=load mmc ${mmcdev}:${mmcpart} ${fdt_addr} ${fdt_file} || " \
+ 		"load mmc ${mmcdev}:${mmcpart} ${fdt_addr} boot/${fdt_file}\0" \
++	"loadfdt_sd=load mmc ${sd_dev}:${mmcpart} ${fdt_addr} ${fdt_file} || " \
++		"load mmc ${sd_dev}:${mmcpart} ${fdt_addr} boot/${fdt_file}\0" \
+ 	"loadtee=load mmc ${mmcdev}:${mmcpart} ${tee_addr} ${tee_file} || " \
+ 		"load mmc ${mmcdev}:${mmcpart} ${tee_addr} boot/${tee_file}\0" \
+ 	"mmcboot=echo Booting from mmc ...; " \
+@@ -234,6 +241,21 @@
+ 				"bootz; " \
+ 			"fi;" \
+ 		"fi;\0" \
++	"mmcboot_sd=echo Booting from sd ...; " \
++		"run mmcargs_sd; " \
++		"if test ${boot_fdt} = yes || test ${boot_fdt} = try; then " \
++			"if run loadfdt_sd; then " \
++				"bootz ${loadaddr} - ${fdt_addr}; " \
++			"else " \
++				"if test ${boot_fdt} = try; then " \
++					"bootz; " \
++				"else " \
++					"echo WARN: Cannot load the DT; " \
++				"fi; " \
++			"fi; " \
++		"else " \
++			"bootz; " \
++		"fi;\0" \
+ 	"netargs=setenv bootargs console=${console},${baudrate} ${smp} " \
+ 		"root=/dev/nfs " \
+ 		"ip=dhcp nfsroot=${serverip}:${nfsroot},v3,tcp\0" \
+@@ -282,6 +304,11 @@
+ 				"if test $tee_file = undefined; then " \
+ 					"echo WARNING: Could not determine tee to use; fi; " \
+ 			"fi;\0" \
++	"bootcmd_sd="\
++		"run findfdt;" \
++		"mmc dev ${sd_dev};" \
++		"run loadimage_sd;" \
++		"run mmcboot_sd\0" \
+ 
+ #ifdef CONFIG_IMX_OPTEE
+ #define CONFIG_BOOTCOMMAND \
+-- 
+2.17.1
+

@@ -1,0 +1,106 @@
+#!/bin/sh
+
+VER_PATH="/etc/ax_version"
+SYS_INFO="$(hostname)_info"
+INFO_FILE="$VER_PATH/sysinfo"
+BSP_VER_FILE="/etc/build"
+
+function_init()
+{
+    if [ ! -f $VER_PATH/$SYS_INFO ]; then
+        echo ""
+        echo "==== Unknown $HOSTNAME Information ===="
+        echo ""
+
+        exit 0
+    else
+        echo ""
+        echo "==== System Information ===="
+        echo ""
+
+        . $VER_PATH/$SYS_INFO
+    fi
+}
+
+read_info()
+{
+    if [ ! -z $1 ]; then
+        if [ $1 -eq 1 ]; then
+            $2 $3
+        fi
+    fi
+}
+
+print_info()
+{
+    if [ ! -z $1 ]; then
+        if [ $1 -eq 1 ]; then
+            printf "%-25s %s\n" "$2" "$3"
+        else
+            printf "%-25s %s\n" "$2" "N/A"
+        fi
+    fi
+}
+
+function_init > $INFO_FILE
+
+# Serial Number
+read_info "$SER_NUM_EN" "serial_number"
+print_info "$SER_NUM_EN" "Serial Number:" "$SER_NUM" >> $INFO_FILE
+
+# Device Name
+read_info "$DEV_NAME_EN" "dev_name"
+print_info "$DEV_NAME_EN" "Device Name:" "$DEV_NAME" >> $INFO_FILE
+
+# System Hardware Revision
+read_info "$HW_REV_EN" "hardware_revision"
+print_info "$HW_REV_EN" "Hardware Revision:" "$HW_REV" >> $INFO_FILE
+
+# MAC Address
+if [ -z $MAC_NUM ]; then
+    MAC_NUM=0
+fi
+
+for ((i=0;i<$MAC_NUM;i++))
+do
+	read_info "$MAC_EN" "mac_address" "$i"
+    print_info "$MAC_EN" "MAC Address $i:" "$MAC" >> $INFO_FILE
+done
+
+# Bootloader version
+read_info "$BOOTLOADER_VER_EN" "bootloader_version"
+print_info "$BOOTLOADER_VER_EN" "Bootloader Version:" "$BOOTLOADER_VER" >> $INFO_FILE
+
+# System Build
+if [ ! -f $BSP_VER_FILE ]; then
+    SYS_BUILD_EN=0
+fi
+
+read_info "$SYS_BUILD_EN" "system_build $BSP_VER_FILE"
+print_info "$SYS_BUILD_EN" "System Build:" "$SYS_BUILD" >> $INFO_FILE
+
+# Oprating System
+read_info "$OP_SYS_EN" "opration_system"
+print_info "$OP_SYS_EN" "Oprating System:" "$OP_SYS" >> $INFO_FILE
+
+# Kernel Build
+read_info "$KERNEL_BUILD_EN" "kernel_build"
+print_info "$KERNEL_BUILD_EN" "Kernel Build:" "$KERNEL_BUILD" >> $INFO_FILE
+
+# Build Number
+read_info "$BUILD_NUM_EN" "build_number"
+print_info "$BUILD_NUM_EN" "Build Number:" "$BUILD_NUM" >> $INFO_FILE
+
+# Linux Version
+read_info "$LINUX_REV_EN" "linux_version"
+print_info "$LINUX_REV_EN" "Linux Version:" "$LINUX_VER" >> $INFO_FILE
+
+# Memory Size
+read_info "$MEM_SIZE_EN" "memory_size"
+print_info "$MEM_SIZE_EN" "Memory Size:" "$MEM_SIZE" >> $INFO_FILE
+
+# Storage Size
+read_info "$DISK_SIZE_EN" "storage_size"
+print_info "$DISK_SIZE_EN" "Storage Size:" "$DISK_SIZE" >> $INFO_FILE
+
+exit 0

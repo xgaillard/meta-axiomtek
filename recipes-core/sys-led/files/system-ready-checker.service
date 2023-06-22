@@ -1,0 +1,12 @@
+[Unit]
+Description=System Ready Checker
+After=serial-getty@ttymxc0.service
+
+[Service]
+User=root
+Type=simple
+
+ExecStart=system-ready-checker.sh
+
+[Install]
+WantedBy=getty.target

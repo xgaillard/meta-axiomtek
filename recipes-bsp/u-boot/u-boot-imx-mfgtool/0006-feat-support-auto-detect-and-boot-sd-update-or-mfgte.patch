@@ -1,0 +1,63 @@
+From 84002c17f40d5890e3d48410f43fd2ac96244cad Mon Sep 17 00:00:00 2001
+From: "ktim.chen" <ktim.chen@axiomtek.com.tw>
+Date: Sun, 31 Jul 2022 00:30:08 +0800
+Subject: [PATCH 06/13] feat: support auto detect and boot sd update or mfgtest
+ images
+
+---
+ board/axiomtek/common/mmc.c | 29 ++++++++++++++++++++++++++++-
+ 1 file changed, 28 insertions(+), 1 deletion(-)
+ mode change 100644 => 100755 board/axiomtek/common/mmc.c
+
+diff --git a/board/axiomtek/common/mmc.c b/board/axiomtek/common/mmc.c
+old mode 100644
+new mode 100755
+index ab1652d697..2833ae78f7
+--- a/board/axiomtek/common/mmc.c
++++ b/board/axiomtek/common/mmc.c
+@@ -11,6 +11,10 @@
+ #include <stdbool.h>
+ #include <mmc.h>
+ #include <env.h>
++#include <fs.h>
++
++#define UPDATE_FILE		"/home/root/update/update.sh"
++#define MFGTEST_FILE	"/home/root/mfgtest/production.sh"
+ 
+ static int check_mmc_autodetect(void)
+ {
+@@ -34,7 +38,30 @@ void board_late_mmc_env_init(void)
+ {
+ 	char cmd[32];
+ 	char mmcblk[32];
+-	u32 dev_no = mmc_get_env_dev();
++	struct mmc *mmc;
++	u32 dev_no;
++	int update_exist, mfgtest_exist;
++
++	mmc = find_mmc_device(2);
++
++	if (mmc_getcd(mmc))
++	{
++		if (fs_set_blk_dev("mmc", "2:2", FS_TYPE_EXT))
++			dev_no = mmc_get_env_dev();
++		else
++		{
++			update_exist = fs_exists(UPDATE_FILE);
++			fs_set_blk_dev("mmc", "2:2", FS_TYPE_EXT);
++			mfgtest_exist = fs_exists(MFGTEST_FILE);
++
++			if (update_exist || mfgtest_exist)
++				dev_no = 2;
++			else
++				dev_no = mmc_get_env_dev();
++		}
++	}
++	else
++		dev_no = mmc_get_env_dev();
+ 
+ 	if (!check_mmc_autodetect())
+ 		return;
+-- 
+2.17.1
+

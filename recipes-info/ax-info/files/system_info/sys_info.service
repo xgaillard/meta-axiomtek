@@ -1,0 +1,11 @@
+[Unit]
+Description=System Information
+After=cockpit.service
+
+[Service]
+Type=forking
+ExecStart=/usr/bin/sysinfo
+
+[Install]
+WantedBy=multi-user.target
+

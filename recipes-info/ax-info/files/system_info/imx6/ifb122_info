@@ -1,0 +1,100 @@
+#!/bin/sh
+
+# Enable Option
+SER_NUM_EN=1
+DEV_NAME_EN=1
+HW_REV_EN=1
+MAC_EN=1
+BOOTLOADER_VER_EN=1
+SYS_BUILD_EN=1
+OP_SYS_EN=1
+KERNEL_BUILD_EN=1
+BUILD_NUM_EN=1
+LINUX_REV_EN=1
+MEM_SIZE_EN=1
+DISK_SIZE_EN=1
+
+I2C_BUS=1
+SLAVE_ADDR=50
+
+SER_NUM_INDEX=3
+SER_NUM_LEN=16
+
+DEV_NAME_INDEX=4
+DEV_NAME_LEN=6
+
+HW_REV_INDEX=5
+HW_REV_LEN=2
+
+MAC_INDEX=6
+MAC_LEN=12
+MAC_NUM=2
+
+BOOTLOADER_VER_INDEX=10
+BOOTLOADER_VER_LEN=6
+
+serial_number()
+{
+    SER_NUM="$(eeprom_read $I2C_BUS $SLAVE_ADDR $SER_NUM_INDEX $SER_NUM_LEN | cut -d ":" -f 2)"
+}
+
+dev_name()
+{
+    DEV_NAME="$(eeprom_read $I2C_BUS $SLAVE_ADDR $DEV_NAME_INDEX $DEV_NAME_LEN | cut -d ":" -f 2)"
+}
+
+hardware_revision()
+{
+    HW_REV="$(eeprom_read $I2C_BUS $SLAVE_ADDR $HW_REV_INDEX $HW_REV_LEN | cut -d ":" -f 2)"
+}
+
+mac_address()
+{
+    MAC="$(eeprom_read $I2C_BUS $SLAVE_ADDR $MAC_INDEX $MAC_LEN $1 | cut -d ":" -f 2)"
+    MAC="$(echo ${MAC:0:2}:${MAC:2:2}:${MAC:4:2}:${MAC:6:2}:${MAC:8:2}:${MAC:10:2})"
+}
+
+bootloader_version()
+{
+    BOOTLOADER_VER="$(eeprom_read $I2C_BUS $SLAVE_ADDR $BOOTLOADER_VER_INDEX $BOOTLOADER_VER_LEN | cut -d ":" -f 2)"
+}
+
+system_build()
+{
+    BSP_VER="$(cat $1 | grep DISTRO_VERSION | awk '{print $3}')"
+    TIMESTAMP="$(cat /etc/timestamp)"
+    BUILD_DATE=(${TIMESTAMP:0:4}-${TIMESTAMP:4:2}-${TIMESTAMP:6:2}" "${TIMESTAMP:8:2}:${TIMESTAMP:10:2}:${TIMESTAMP:12:2})
+    SYS_BUILD="$BSP_VER $BUILD_DATE GMT"
+}   
+
+opration_system()
+{
+    OP_SYS="$(uname -r | cut -d "+" -f 1)"
+}
+
+kernel_build()
+{
+    KERNEL_BUILD="$(uname -v | awk '{print $2,$3,$4,$5,$6,$7,$8,$9}')"
+}
+
+build_number()
+{
+    BUILD_NUM="091901"
+}
+
+linux_version()
+{
+    LINUX_VER="Yocto $(cat /etc/os-release | grep -w VERSION | cut -d "(" -f 2 | cut -d ")" -f 1)"
+}
+
+memory_size()
+{
+    MEM_SIZE="$(free | grep -i Mem | awk '{printf "%0.2f GB\n" ,$2/1024/1024}')"
+}
+
+storage_size()
+{
+    dev=`ls /dev/mmcblk*boot*`; dev=($dev); dev=${dev[0]}; dev=${dev#/dev/}; dev=${dev%boot*};
+    DISK_SIZE="$(cat /proc/partitions | grep -w $dev | awk '{printf "%0.2f GB\n", $(NF-1)/1024/1024}')"
+}
+

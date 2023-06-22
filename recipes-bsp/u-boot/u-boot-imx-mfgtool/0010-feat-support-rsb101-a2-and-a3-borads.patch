@@ -1,0 +1,131 @@
+From ae5b4caf865111a1d3db62fe0baa2654d7a7a5a1 Mon Sep 17 00:00:00 2001
+From: "ktim.chen" <ktim.chen@axiomtek.com.tw>
+Date: Fri, 26 Aug 2022 11:11:21 +0800
+Subject: [PATCH 10/13] feat: support rsb101 a2 and a3 borads
+
+    - Support multi boards in one image
+    - Add to read hardware revision from eeprom
+---
+ board/axiomtek/common/ax_eeprom.c | 19 +++++++++++++++++++
+ board/axiomtek/common/ax_eeprom.h |  6 ++++++
+ board/axiomtek/rsb101/rsb101.c    | 19 ++++++++++++++++++-
+ include/configs/rsb101.h          |  4 +++-
+ 4 files changed, 46 insertions(+), 2 deletions(-)
+
+diff --git a/board/axiomtek/common/ax_eeprom.c b/board/axiomtek/common/ax_eeprom.c
+index ce4d97af83..ab2c986fef 100755
+--- a/board/axiomtek/common/ax_eeprom.c
++++ b/board/axiomtek/common/ax_eeprom.c
+@@ -32,6 +32,10 @@
+ #define MAC_ADDR_OFFSET			0x50
+ #endif
+ 
++#ifndef HW_REV_OFFSET
++#define HW_REV_OFFSET			0x40
++#endif
++
+ #ifdef CONFIG_DM_I2C
+ static struct udevice *g_dev = NULL;
+ #endif
+@@ -117,6 +121,21 @@ int eeprom_read_mac_addr(uchar *buf, int num)
+ 	return 0;
+ }
+ 
++/*
++ * Routine: eeprom_read_hw_rev
++ * Description: read hardware revision and store it in buf.
++ */
++int eeprom_read_hw_rev(uchar *buf)
++{
++	int res;
++
++	res = ax_eeprom_read(CONFIG_SYS_I2C_EEPROM_BUS, HW_REV_OFFSET, buf, 2);
++	if (res)
++		return res;
++
++	return 0;
++}
++
+ /*
+  * Routine: eeprom_read_data
+  * Description: read data and store it in buf.
+diff --git a/board/axiomtek/common/ax_eeprom.h b/board/axiomtek/common/ax_eeprom.h
+index 6429987a9a..74399446a0 100755
+--- a/board/axiomtek/common/ax_eeprom.h
++++ b/board/axiomtek/common/ax_eeprom.h
+@@ -9,6 +9,7 @@
+ 
+ #if defined(CONFIG_SYS_I2C) || defined(CONFIG_DM_I2C)
+ int eeprom_read_mac_addr(uchar *buf, int num);
++int eeprom_read_hw_rev(uchar *buf);
+ int eeprom_read_data(uchar *buf, uint offset, int len);
+ #else
+ static inline int eeprom_read_mac_addr(uchar *buf, int num)
+@@ -16,6 +17,11 @@ static inline int eeprom_read_mac_addr(uchar *buf, int num)
+ 	return 1;
+ }
+ 
++static inline int eeprom_read_hw_rev(uchar *buf)
++{
++	return 1;
++}
++
+ static inline int eeprom_read_data(uchar *buf, uint offset, int len)
+ {
+ 	return 1;
+diff --git a/board/axiomtek/rsb101/rsb101.c b/board/axiomtek/rsb101/rsb101.c
+index dd157bb33f..3d08f0811d 100755
+--- a/board/axiomtek/rsb101/rsb101.c
++++ b/board/axiomtek/rsb101/rsb101.c
+@@ -277,6 +277,23 @@ static int handle_mac_address(char *env_var, int num)
+ 		return eth_env_set_enetaddr(env_var, enetaddr);
+ }
+ 
++static int handle_hw_rev(void)
++{
++		unsigned char rev[3]={0};
++		int rc;
++
++		rc = eeprom_read_hw_rev(rev);
++		if (rc)
++			return rc;
++
++		if (strcmp(rev, "A3") != 0)
++			env_set("board_rev", "A2");
++		else
++			env_set("board_rev", "A3");
++		
++		return 0;
++}
++
+ int board_phy_config(struct phy_device *phydev)
+ {
+ 	phy_write(phydev, MDIO_DEVAD_NONE, 0x1f, 0x8190);
+@@ -341,7 +358,7 @@ int board_late_init(void)
+ #ifdef CONFIG_ENV_VARS_UBOOT_RUNTIME_CONFIG
+ 	env_set("board_name", "RSB101");
+ 	env_set("product_name", "IFB122");
+-	env_set("board_rev", "MX6UL");
++	handle_hw_rev();
+ #endif
+ 
+ #ifdef CONFIG_ENV_IS_IN_MMC
+diff --git a/include/configs/rsb101.h b/include/configs/rsb101.h
+index 45ddd1c9ab..55f3f3d6f8 100755
+--- a/include/configs/rsb101.h
++++ b/include/configs/rsb101.h
+@@ -185,8 +185,10 @@
+ 			"fi;\0" \
+ 		"findfdt="\
+ 			"if test $fdt_file = undefined; then " \
+-				"if test $product_name = IFB122 && test $board_rev = MX6UL; then " \
++				"if test $product_name = IFB122 && test $board_rev = A2; then " \
+ 					"setenv fdt_file imx6ul-ifb122-a2.dtb; fi; " \
++				"if test $product_name = IFB122 && test $board_rev = A3; then " \
++					"setenv fdt_file imx6ul-ifb122-a3.dtb; fi; " \
+ 				"if test $fdt_file = undefined; then " \
+ 					"echo WARNING: Could not determine dtb to use; " \
+ 				"fi; " \
+-- 
+2.17.1
+

@@ -1,0 +1,75 @@
+From dce41cfb449de835d09c912355e0aa34f77e9519 Mon Sep 17 00:00:00 2001
+From: "ktim.chen" <ktim.chen@axiomtek.com.tw>
+Date: Mon, 19 Sep 2022 11:29:55 +0800
+Subject: [PATCH 13/13] feat: support mfgtest boot from usb for ifb122
+
+---
+ include/configs/rsb101.h | 34 ++++++++++++++++++++++++----------
+ 1 file changed, 24 insertions(+), 10 deletions(-)
+
+diff --git a/include/configs/rsb101.h b/include/configs/rsb101.h
+index 171d28aba4..a5e8e024f3 100755
+--- a/include/configs/rsb101.h
++++ b/include/configs/rsb101.h
+@@ -112,6 +112,9 @@
+ 	"boot_fdt=try\0" \
+ 	"ip_dyn=yes\0" \
+ 	"splashimage=0x8c000000\0" \
++	"usbstart=usb start\0" \
++	"usbdev=0\0" \
++	"initrd_file=mfgtest-initramfs-ifb122.cpio.gz.u-boot\0" \
+ 	"mmcdev="__stringify(CONFIG_SYS_MMC_ENV_DEV)"\0" \
+ 	"mmcpart=" __stringify(CONFIG_SYS_MMC_IMG_LOAD_PART) "\0" \
+ 	"mmcroot=" CONFIG_MMCROOT " rootwait rw\0" \
+@@ -123,9 +126,15 @@
+ 		"fatload mmc ${mmcdev}:${mmcpart} ${loadaddr} ${script};\0" \
+ 	"bootscript=echo Running bootscript from mmc ...; " \
+ 		"source\0" \
++	"loadmfgtestimage=fatload usb ${usbdev} ${loadaddr} ${image}\0" \
++	"loadmfgtestfdt=fatload usb ${usbdev} ${fdt_addr} ${fdt_file}\0" \
++	"loadmfgtestinitrd=fatload usb ${usbdev} ${initrd_addr} ${initrd_file}\0" \
+ 	"loadimage=fatload mmc ${mmcdev}:${mmcpart} ${loadaddr} ${image}\0" \
+ 	"loadfdt=fatload mmc ${mmcdev}:${mmcpart} ${fdt_addr} ${fdt_file}\0" \
+ 	"loadtee=fatload mmc ${mmcdev}:${mmcpart} ${tee_addr} ${tee_file}\0" \
++	"usbboot=echo Booting from usb ...; " \
++		"run loadmfgtestimage; run loadmfgtestfdt; run loadmfgtestinitrd; " \
++		"${kboot} ${loadaddr} ${initrd_addr} ${fdt_addr};\0" \
+ 	"mmcboot=echo Booting from mmc ...; " \
+ 		"run mmcargs; " \
+ 		"if test ${tee} = yes; then " \
+@@ -197,17 +206,22 @@
+ #define CONFIG_BOOTCOMMAND \
+ 	   "run findfdt;" \
+ 	   "run findtee;" \
+-	   "mmc dev ${mmcdev};" \
+-	   "mmc dev ${mmcdev}; if mmc rescan; then " \
+-		   "if run loadbootscript; then " \
+-			   "run bootscript; " \
+-		   "else " \
+-			   "if run loadimage; then " \
+-				   "run mmcboot; " \
+-			   "else run netboot; " \
++	   "run usbstart;" \
++	   "if test -e usb ${usbdev} mfgtest; then " \
++		   "run usbboot; " \
++	   "else " \
++		   "mmc dev ${mmcdev};" \
++		   "mmc dev ${mmcdev}; if mmc rescan; then " \
++			   "if run loadbootscript; then " \
++				   "run bootscript; " \
++			   "else " \
++				   "if run loadimage; then " \
++					   "run mmcboot; " \
++				   "else run netboot; " \
++				   "fi; " \
+ 			   "fi; " \
+-		   "fi; " \
+-	   "else run netboot; fi"
++		   "else run netboot; fi; " \
++	   "fi"
+ #endif
+ 
+ /* Miscellaneous configurable options */
+-- 
+2.17.1
+

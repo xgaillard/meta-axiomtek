@@ -1,0 +1,61 @@
+From ea5ad5131115414ce767b3fced778fcabee5baed Mon Sep 17 00:00:00 2001
+From: "ktim.chen" <ktim.chen@axiomtek.com.tw>
+Date: Wed, 14 Sep 2022 16:18:23 +0800
+Subject: [PATCH 12/13] feat: change ifb122 boot partition
+
+---
+ board/axiomtek/common/mmc.c | 15 +++++++++++++++
+ include/configs/rsb101.h    |  2 +-
+ 2 files changed, 16 insertions(+), 1 deletion(-)
+
+diff --git a/board/axiomtek/common/mmc.c b/board/axiomtek/common/mmc.c
+index 2dda4f2667..42006407ff 100755
+--- a/board/axiomtek/common/mmc.c
++++ b/board/axiomtek/common/mmc.c
+@@ -23,6 +23,7 @@
+ #define SD_NUM	2
+ #elif defined(CONFIG_AX_IFB122)
+ #define SD_NUM	0
++#define MMC_IMG_LOAD_PART	1
+ #endif
+ 
+ static int check_mmc_autodetect(void)
+@@ -78,8 +79,22 @@ void board_late_mmc_env_init(void)
+ 	env_set_ulong("mmcdev", dev_no);
+ 
+ 	/* Set mmcblk env */
++#if defined(CONFIG_AX_IFB122)
++	if (dev_no == SD_NUM)
++	{
++		env_set_ulong("mmcpart", MMC_IMG_LOAD_PART);
++		sprintf(mmcblk, "/dev/mmcblk%dp2 rootwait rw",
++			mmc_map_to_kernel_blk(dev_no));
++	}
++	else
++	{
++		sprintf(mmcblk, "/dev/mmcblk%dp3 rootwait rw",
++			mmc_map_to_kernel_blk(dev_no));
++	}
++#else
+ 	sprintf(mmcblk, "/dev/mmcblk%dp2 rootwait rw",
+ 		mmc_map_to_kernel_blk(dev_no));
++#endif
+ 	env_set("mmcroot", mmcblk);
+ 
+ 	sprintf(cmd, "mmc dev %d", dev_no);
+diff --git a/include/configs/rsb101.h b/include/configs/rsb101.h
+index 55f3f3d6f8..171d28aba4 100755
+--- a/include/configs/rsb101.h
++++ b/include/configs/rsb101.h
+@@ -51,7 +51,7 @@
+ #define CONFIG_SYS_I2C_SPEED		100000
+ #endif
+ 
+-#define CONFIG_SYS_MMC_IMG_LOAD_PART	1
++#define CONFIG_SYS_MMC_IMG_LOAD_PART	2
+ 
+ #ifdef CONFIG_NAND_BOOT
+ #define MFG_NAND_PARTITION "mtdparts=gpmi-nand:64m(nandboot),16m(nandkernel),16m(nanddtb),16m(nandtee),-(nandrootfs)"
+-- 
+2.17.1
+

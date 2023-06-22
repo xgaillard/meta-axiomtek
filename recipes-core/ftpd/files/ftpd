@@ -1,0 +1,11 @@
+service ftp
+{
+	port		= 21
+	protocol	= tcp
+	socket_type	= stream
+	wait		= no
+	user		= root
+	server		= /usr/sbin/ftpd
+	disable		= yes
+}
+

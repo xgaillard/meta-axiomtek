@@ -1,0 +1,55 @@
+From 1df10768bf56ae2175bf2fc4e56e3e5949176fd8 Mon Sep 17 00:00:00 2001
+From: "ktim.chen" <ktim.chen@axiomtek.com.tw>
+Date: Fri, 26 Aug 2022 16:26:43 +0800
+Subject: [PATCH 7/8] feat: use 50 MHz external osc for rsb101 enet clock
+ source
+
+---
+ arch/arm/mach-imx/Kconfig       | 6 ++++++
+ arch/arm/mach-imx/mach-imx6ul.c | 5 +++++
+ 2 files changed, 11 insertions(+)
+ mode change 100644 => 100755 arch/arm/mach-imx/Kconfig
+ mode change 100644 => 100755 arch/arm/mach-imx/mach-imx6ul.c
+
+diff --git a/arch/arm/mach-imx/Kconfig b/arch/arm/mach-imx/Kconfig
+old mode 100644
+new mode 100755
+index 591033b20c9b..6f13e61aa7cd
+--- a/arch/arm/mach-imx/Kconfig
++++ b/arch/arm/mach-imx/Kconfig
+@@ -220,6 +220,12 @@ config SOC_IMX6UL
+ 	help
+ 	  This enables support for Freescale i.MX6 UltraLite processor.
+ 
++config AX_RSB101
++	bool "Axiomtek RSB101 i.MX6UL board support"
++
++	help
++	  This enables support for Axiomtek RSB101 i.MX6UL board.
++
+ config SOC_LS1021A
+ 	bool "Freescale LS1021A support"
+ 	select ARM_GIC
+diff --git a/arch/arm/mach-imx/mach-imx6ul.c b/arch/arm/mach-imx/mach-imx6ul.c
+old mode 100644
+new mode 100755
+index 671aa0d4655a..aaaa600a0ce3
+--- a/arch/arm/mach-imx/mach-imx6ul.c
++++ b/arch/arm/mach-imx/mach-imx6ul.c
+@@ -21,8 +21,13 @@ static void __init imx6ul_enet_clk_init(void)
+ 
+ 	gpr = syscon_regmap_lookup_by_compatible("fsl,imx6ul-iomuxc-gpr");
+ 	if (!IS_ERR(gpr))
++#ifdef CONFIG_AX_RSB101
++		regmap_update_bits(gpr, IOMUXC_GPR1, IMX6UL_GPR1_ENET_CLK_DIR,
++				   ~IMX6UL_GPR1_ENET_CLK_OUTPUT);
++#else
+ 		regmap_update_bits(gpr, IOMUXC_GPR1, IMX6UL_GPR1_ENET_CLK_DIR,
+ 				   IMX6UL_GPR1_ENET_CLK_OUTPUT);
++#endif
+ 	else
+ 		pr_err("failed to find fsl,imx6ul-iomux-gpr regmap\n");
+ }
+-- 
+2.17.1
+

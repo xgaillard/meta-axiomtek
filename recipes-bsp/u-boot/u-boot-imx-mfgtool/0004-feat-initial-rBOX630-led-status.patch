@@ -1,0 +1,85 @@
+From 615c21e4154cbc3dfc74b60153bfe5a637fc4bb2 Mon Sep 17 00:00:00 2001
+From: "ktim.chen" <ktim.chen@axiomtek.com.tw>
+Date: Sat, 30 Jul 2022 09:20:23 +0800
+Subject: [PATCH 04/13] feat: initial rBOX630 led status
+
+    - Turn off pcie mini card and uart led
+    - Switch system status led to loading mode
+---
+ board/axiomtek/q7m120/q7m120.c | 39 ++++++++++++++++++++++++++++++++++
+ 1 file changed, 39 insertions(+)
+
+diff --git a/board/axiomtek/q7m120/q7m120.c b/board/axiomtek/q7m120/q7m120.c
+index 8030ec7d79..bdf6545f24 100755
+--- a/board/axiomtek/q7m120/q7m120.c
++++ b/board/axiomtek/q7m120/q7m120.c
+@@ -50,6 +50,7 @@
+ #endif
+ #endif /*CONFIG_FSL_FASTBOOT*/
+ #include "../common/ax_eeprom.h"
++#include <led.h>
+ 
+ DECLARE_GLOBAL_DATA_PTR;
+ 
+@@ -76,6 +77,13 @@ DECLARE_GLOBAL_DATA_PTR;
+ 
+ #define I2C_PAD MUX_PAD_CTRL(I2C_PAD_CTRL)
+ 
++#define I2C_BUS_NUM      1
++#define I2C_CPLD_ADDR    0x77
++#define CPLD_BANK_REG    0x4e
++#define CPLD_SYS_REG     0x01
++#define CPLD_SYS_CTRL1   0x51
++#define CPLD_SYS_LED_ACT 0x01
++
+ #define NO_MAC_ADDR             "No MAC address found from EEPROM for %s\n"
+ 
+ #define PHY_ID_AR8031	0x4dd074
+@@ -112,6 +120,30 @@ static void setup_iomux_uart(void)
+ 	SETUP_IOMUX_PADS(uart1_pads);
+ }
+ 
++int setup_sys_status_led(void)
++{
++	u8 temp;
++
++	struct udevice *dev;
++	int ret;
++
++	ret = i2c_get_chip_for_busnum(I2C_BUS_NUM, I2C_CPLD_ADDR, 1, &dev);
++	if (ret) {
++		printf("%s: Cannot find udev for a bus %d\n", __func__, I2C_BUS_NUM);
++		return ret;
++	}
++
++	/* Switch bank to CPLD system register*/
++	temp = CPLD_SYS_REG;
++	dm_i2c_write(dev, CPLD_BANK_REG, &temp, 1);
++
++	/* Enter into D0 state, full operation */
++	dm_i2c_read(dev, CPLD_SYS_CTRL1, &temp, 1);
++	temp &= ~CPLD_SYS_LED_ACT;
++	dm_i2c_write(dev, CPLD_SYS_CTRL1, &temp, 1);
++	
++	return 0;
++}
+ #ifdef CONFIG_FSL_ESDHC_IMX
+ #if !CONFIG_IS_ENABLED(DM_MMC)
+ static iomux_v3_cfg_t const usdhc3_pads[] = {
+@@ -736,6 +768,13 @@ int board_late_init(void)
+ 	add_board_boot_modes(board_boot_modes);
+ #endif
+ 
++#ifdef CONFIG_AX_RBOX630
++	setup_sys_status_led();
++
++	if (IS_ENABLED(CONFIG_LED))
++		led_default_state();
++#endif
++
+ 	env_set("tee", "no");
+ #ifdef CONFIG_IMX_OPTEE
+ 	env_set("tee", "yes");
+-- 
+2.17.1
+

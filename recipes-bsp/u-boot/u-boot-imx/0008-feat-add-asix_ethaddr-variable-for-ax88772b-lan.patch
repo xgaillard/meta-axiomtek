@@ -1,0 +1,74 @@
+From 70c87b786d0c31136e3c72912a245253b7c2c650 Mon Sep 17 00:00:00 2001
+From: "ktim.chen" <ktim.chen@axiomtek.com.tw>
+Date: Wed, 17 Aug 2022 15:45:59 +0800
+Subject: [PATCH 08/13] feat: add asix_ethaddr variable for ax88772b lan
+
+---
+ board/axiomtek/q7m120/q7m120.c | 22 ++++++++++++----------
+ include/configs/q7m120.h       |  4 ++--
+ 2 files changed, 14 insertions(+), 12 deletions(-)
+
+diff --git a/board/axiomtek/q7m120/q7m120.c b/board/axiomtek/q7m120/q7m120.c
+index bdf6545f24..a5763d782e 100755
+--- a/board/axiomtek/q7m120/q7m120.c
++++ b/board/axiomtek/q7m120/q7m120.c
+@@ -325,19 +325,19 @@ static void setup_fec(void)
+ 	}
+ }
+ 
+-static int handle_mac_address(char *env_var)
++static int handle_mac_address(char *env_var, int num)
+ {
+-        unsigned char enetaddr[6];
+-        int rc;
++	unsigned char enetaddr[6];
++	int rc;
+ 
+-        rc = eeprom_read_mac_addr(enetaddr);
+-        if (rc)
+-                return rc;
++	rc = eeprom_read_mac_addr(enetaddr, num);
++	if (rc)
++		return rc;
+ 
+-        if (!is_valid_ethaddr(enetaddr))
+-                return -1;
++	if (!is_valid_ethaddr(enetaddr))
++		return -1;
+ 
+-        return eth_env_set_enetaddr(env_var, enetaddr);
++	return eth_env_set_enetaddr(env_var, enetaddr);
+ }
+ 
+ #ifdef CONFIG_USB_EHCI_MX6
+@@ -799,8 +799,10 @@ int board_late_init(void)
+ 	board_late_mmc_env_init();
+ #endif
+ 
+-	if (handle_mac_address("ethaddr"))
++	if (handle_mac_address("ethaddr",0))
+ 		printf(NO_MAC_ADDR, "primary NIC");
++	if (handle_mac_address("asix_ethaddr",1))
++		printf(NO_MAC_ADDR, "secondary NIC");
+ 
+ 	return 0;
+ }
+diff --git a/include/configs/q7m120.h b/include/configs/q7m120.h
+index e7db829d7c..34dbaab472 100755
+--- a/include/configs/q7m120.h
++++ b/include/configs/q7m120.h
+@@ -204,9 +204,9 @@
+ 	EMMC_ENV	  \
+ 	"smp=" SYS_NOSMP "\0"\
+ 	"mmcargs=setenv bootargs console=${console},${baudrate} ${smp} " \
+-		"root=${mmcroot}\0" \
++		"root=${mmcroot} asix_ethaddr=${asix_ethaddr}\0" \
+ 	"mmcargs_sd=setenv bootargs console=${console},${baudrate} ${smp} " \
+-		"root=${mmcroot_sd}\0" \
++		"root=${mmcroot_sd} asix_ethaddr=${asix_ethaddr}\0" \
+ 	"loadbootscript=" \
+ 		"load mmc ${mmcdev}:${mmcpart} ${loadaddr} ${script} || " \
+ 		"load mmc ${mmcdev}:${mmcpart} ${loadaddr} boot/${script};\0" \
+-- 
+2.17.1
+

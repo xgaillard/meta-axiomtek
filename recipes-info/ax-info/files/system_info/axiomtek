@@ -1,0 +1,8 @@
+#!/bin/sh
+
+VER_PATH="/etc/ax_version"
+INFO_FILE="$VER_PATH/sysinfo"
+
+cat $INFO_FILE
+
+exit 0

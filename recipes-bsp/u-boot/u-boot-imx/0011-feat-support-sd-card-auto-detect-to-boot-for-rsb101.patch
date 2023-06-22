@@ -1,0 +1,61 @@
+From bc7f667883c61d9bde4a0254aaff9af689eea919 Mon Sep 17 00:00:00 2001
+From: "ktim.chen" <ktim.chen@axiomtek.com.tw>
+Date: Fri, 26 Aug 2022 11:17:09 +0800
+Subject: [PATCH 11/13] feat: support sd card auto detect to boot for rsb101
+
+---
+ board/axiomtek/common/mmc.c | 19 ++++++++++++++-----
+ 1 file changed, 14 insertions(+), 5 deletions(-)
+
+diff --git a/board/axiomtek/common/mmc.c b/board/axiomtek/common/mmc.c
+index 2833ae78f7..2dda4f2667 100755
+--- a/board/axiomtek/common/mmc.c
++++ b/board/axiomtek/common/mmc.c
+@@ -13,9 +13,18 @@
+ #include <env.h>
+ #include <fs.h>
+ 
+-#define UPDATE_FILE		"/home/root/update/update.sh"
++#define STRING(num)	STR(num)
++#define STR(num)	#num
++
++#define UPDATE_FILE	"/home/root/update/update.sh"
+ #define MFGTEST_FILE	"/home/root/mfgtest/production.sh"
+ 
++#if defined(CONFIG_AX_RBOX630)
++#define SD_NUM	2
++#elif defined(CONFIG_AX_IFB122)
++#define SD_NUM	0
++#endif
++
+ static int check_mmc_autodetect(void)
+ {
+ 	char *autodetect_str = env_get("mmcautodetect");
+@@ -42,20 +51,20 @@ void board_late_mmc_env_init(void)
+ 	u32 dev_no;
+ 	int update_exist, mfgtest_exist;
+ 
+-	mmc = find_mmc_device(2);
++	mmc = find_mmc_device(SD_NUM);
+ 
+ 	if (mmc_getcd(mmc))
+ 	{
+-		if (fs_set_blk_dev("mmc", "2:2", FS_TYPE_EXT))
++		if (fs_set_blk_dev("mmc", STRING(SD_NUM)":2", FS_TYPE_EXT))
+ 			dev_no = mmc_get_env_dev();
+ 		else
+ 		{
+ 			update_exist = fs_exists(UPDATE_FILE);
+-			fs_set_blk_dev("mmc", "2:2", FS_TYPE_EXT);
++			fs_set_blk_dev("mmc", STRING(SD_NUM)":2", FS_TYPE_EXT);
+ 			mfgtest_exist = fs_exists(MFGTEST_FILE);
+ 
+ 			if (update_exist || mfgtest_exist)
+-				dev_no = 2;
++				dev_no = SD_NUM;
+ 			else
+ 				dev_no = mmc_get_env_dev();
+ 		}
+-- 
+2.17.1
+

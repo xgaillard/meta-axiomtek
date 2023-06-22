@@ -1,0 +1,34 @@
+From 1c9700e87f4f0a0efe284bf3218b396b6938a4c6 Mon Sep 17 00:00:00 2001
+From: "ktim.chen" <ktim.chen@axiomtek.com.tw>
+Date: Fri, 2 Sep 2022 16:20:16 +0800
+Subject: [PATCH 8/8] feat: enable rsb101 uart2 and uart3 dma support
+
+---
+ arch/arm/boot/dts/imx6ul-rsb101.dtsi | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/arch/arm/boot/dts/imx6ul-rsb101.dtsi b/arch/arm/boot/dts/imx6ul-rsb101.dtsi
+index 609817f7bf00..47ab9e34f653 100755
+--- a/arch/arm/boot/dts/imx6ul-rsb101.dtsi
++++ b/arch/arm/boot/dts/imx6ul-rsb101.dtsi
+@@ -308,6 +308,8 @@
+ 	/* for DTE mode, add below change */
+ 	fsl,dte-mode;
+ 	pinctrl-0 = <&pinctrl_uart2dte>;
++	dmas = <&sdma 27 4 0>, <&sdma 28 4 0>;
++	dma-names = "rx", "tx";
+ 	status = "okay";
+ };
+ 
+@@ -318,6 +320,8 @@
+ 	/* for DTE mode, add below change */
+ 	fsl,dte-mode;
+ 	pinctrl-0 = <&pinctrl_uart3dte>;
++	dmas = <&sdma 29 4 0>, <&sdma 30 4 0>;
++	dma-names = "rx", "tx";
+ 	status = "okay";
+ };
+ 
+-- 
+2.17.1
+
